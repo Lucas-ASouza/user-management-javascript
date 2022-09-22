@@ -1,22 +1,86 @@
 class UserController {
 
-    constructor (formId, tableId){
+    constructor (formIdCreate, formIdUpdate, tableId){
 
-        this.formEl = document.getElementById(formId);
+        this.formEl = document.getElementById(formIdCreate);
+        this.formUpdateEl = document.getElementById(formIdUpdate);
         this.tableEl = document.getElementById(tableId);
 
         this.onSubmit()
-        this.onEditCancel();
+        this.onEdit();
 
     }
 
-    onEditCancel(){
+    onEdit(){
 
         document.querySelector("#box-user-update .btn-cancel").addEventListener("click", e=>{
 
             this.showPanelCreate();
 
         });
+
+        this.formUpdateEl.addEventListener("submit", event =>{
+
+            event.preventDefault();
+
+            let btn = this.formUpdateEl.querySelector("[type=submit]");
+
+            btn.disabled = true;
+
+            let values = this.getValues(this.formUpdateEl);
+
+            let index = this.formUpdateEl.dataset.trIndex;
+
+            let tr = this.tableEl.rows[index];
+            
+            let userOld = JSON.parse(tr.dataset.user);
+
+            let result = Object.assign({}, userOld, values);
+            //substituir os valores antigos(user old) com os valores digitados novos
+
+        this.getPhoto(this.formUpdateEl).then(
+            (content)=>{
+
+                if (!values.photo) {
+                    result._photo = userOld._photo;
+                    //se a foto nova for inexistente, logo ela é igual a antiga
+                } else{
+                    result._photo = content;
+                    // se a foto nova existir e for diferente, setar ela
+                }
+
+                tr.dataset.user = JSON.stringify(result);
+
+                tr.innerHTML = `
+                <td><img src=${result._photo} class="img-circle img-sm"></td>
+                <td>${result._name}</td>
+                <td>${result._email}</td>
+                <td>${(result._admin)? 'Sim': 'Não'}</td>
+                <td>${Utils.dateFormat(result._register)}</td>
+                <td>
+                    <button type="button" class="btn btn-primary btn-edit btn-xs btn-flat">Editar</button>
+                    <button type="button" class="btn btn-danger btn-xs btn-flat">Excluir</button>
+                </td>
+        `;
+            
+                 this.addEventsTr(tr);
+    
+                this.updateCount();
+
+                 this.formUpdateEl.reset();
+
+                  btn.disabled = false;
+                 //habilita novamento o botão submit
+
+                 this.showPanelCreate();
+
+           },
+           (e)=>{
+               console.error(e);
+           }
+       );       
+
+        })
 
     }
 
@@ -31,14 +95,14 @@ class UserController {
             btn.disabled = true;
             // desabilita o botão submit enquanto processa a informação
 
-            let values = this.getValues();
+            let values = this.getValues(this.formEl);
 
 
             if (!values) return false;
             //caso formulário tenha sido enviado incompleto ou de forma incorreta, não continuar com o código dessem metódo
 
 
-            this.getPhoto().then(
+            this.getPhoto(this.formEl).then(
                  (content)=>{
 
                     values.photo = content;
@@ -58,13 +122,13 @@ class UserController {
 
     }
 
-    getPhoto(){
+    getPhoto(formEl){
 
         return new Promise((resolve, reject)=>{
 
             let fileReader = new FileReader();
 
-            let elements = [...this.formEl.elements].filter(item => {
+            let elements = [...formEl.elements].filter(item => {
     
                 if (item.name === 'photo') {
                     return item;
@@ -96,12 +160,12 @@ class UserController {
 
     }
 
-    getValues(){
+    getValues(formEl){
 
         let user = {};
         let isValid = true;
 
-        [...this.formEl.elements].forEach(function(field, index){
+        [...formEl.elements].forEach(function(field, index){
 
             if(['name', 'email', 'password'].indexOf(field.name) > -1 && !field.value){
                 //verificar se os campos names, email e password estão vazios
@@ -163,16 +227,59 @@ class UserController {
                 </td>
         `;
 
-        tr.querySelector(".btn-edit").addEventListener("click", e=>{
 
-            console.log(JSON.parse(tr.dataset.user));
-            this.showPanelUpdate();
-
-        });
+        this.addEventsTr(tr);
 
         this.tableEl.appendChild(tr);
 
         this.updateCount();
+    }
+
+    addEventsTr(tr){
+
+        tr.querySelector(".btn-edit").addEventListener("click", e=>{
+
+            let json = (JSON.parse(tr.dataset.user));
+            //let form = document.querySelector("#form-user-update");
+
+            this.formUpdateEl.dataset.trIndex = tr.sectionRowIndex;
+            //salva em index do formulário
+
+            for (let name in json){
+
+                let field = this.formUpdateEl.querySelector("[name=" +name.replace("_", "")+ "]");
+
+                if(field){
+                    
+                    switch (field.type) {
+                        case 'file':
+                        continue; //para não trazer a foto para o campo de edição
+                        break;
+                        
+                        case 'radio':
+                            field = this.formUpdateEl.querySelector("[name=" +name.replace("_", "")+ "][value="+ json[name] + "]");
+                            field.checked = true;    
+                        break;
+
+                        case 'checkbox':
+                            field.checked = json[name];
+                        break;
+
+                        default:
+                            field.value = json[name];
+                   }
+
+                    field.value = json[name];
+                    //register da classe não contem Value.    
+                }
+
+            }
+            this.formUpdateEl.querySelector(".photo").src = json._photo;
+
+            this.showPanelUpdate();
+
+        });
+
     }
 
     showPanelCreate(){
