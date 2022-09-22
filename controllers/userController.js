@@ -6,8 +6,9 @@ class UserController {
         this.formUpdateEl = document.getElementById(formIdUpdate);
         this.tableEl = document.getElementById(tableId);
 
-        this.onSubmit()
+        this.onSubmit();
         this.onEdit();
+        this.selectAll();
 
     }
 
@@ -106,6 +107,8 @@ class UserController {
                  (content)=>{
 
                     values.photo = content;
+
+                    this.insert(values);
                     this.addLine(values);
 
                     this.formEl.reset();
@@ -208,7 +211,47 @@ class UserController {
 
     }
 
-    
+    getUsersStorage(){
+
+        let users = [];
+
+        if(sessionStorage.getItem("users")){
+        //veririficar se já existe um array, para não criar outro    
+
+            users = JSON.parse(sessionStorage.getItem("users"));
+
+        }
+        return users;        
+
+    }
+
+    selectAll(){
+
+        let users = this.getUsersStorage();
+
+        users.forEach(dataUser =>{
+
+            let user = new User();
+
+            user.loadFromJSON(dataUser);
+
+            this.addLine(user);
+
+        });
+
+    }
+
+    insert(data){
+
+        let users = this.getUsersStorage();
+
+        users.push(data);
+
+        sessionStorage.setItem("users", JSON.stringify(users));
+        //primeiro parâmetro = nome(chave) do segundo parâmetro
+        //segundo parâmetro = valor do parâmetro
+    }
+
     addLine(dataUser) {
 
         let tr = document.createElement('tr');
