@@ -54,6 +54,8 @@ class UserController {
 
                 user.loadFromJSON(result);
 
+                user.save();
+
                 this.getTr(user, tr);
     
                 this.updateCount();
@@ -98,7 +100,8 @@ class UserController {
 
                     values.photo = content;
 
-                    this.insert(values);
+                    values.save();
+
                     this.addLine(values);
 
                     this.formEl.reset();
@@ -231,16 +234,6 @@ class UserController {
 
     }
 
-    insert(data){
-
-        let users = this.getUsersStorage();
-
-        users.push(data);
-        localStorage.setItem("users", JSON.stringify(users));
-        //sessionStorage.setItem("users", JSON.stringify(users));
-            //primeiro parâmetro = nome(chave) do segundo parâmetro
-            //segundo parâmetro = valor do parâmetro
-    }
 
     addLine(dataUser) {
 
